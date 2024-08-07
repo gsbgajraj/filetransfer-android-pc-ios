@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Transfer Tool</title>
+  <style>
+    #progressBar {
+      width: 100%;
+      background-color: #f3f3f3;
+    }
+    #progressBar div {
+      width: 0;
+      height: 30px;
+      background-color: #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <h1>File Transfer Tool</h1>
+  <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="files" multiple required>
+    <button type="submit">Upload</button>
+  </form>
+  <div id="progressBar"><div></div></div>
+  <div id="uploadStatus"></div>
+  <h2>Upload History</h2>
+  <div id="history"></div>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', function(e) {
+        const percent = e.loaded / e.total * 100;
+        document.querySelector('#progressBar div').style.width = percent + '%';
+      });
+
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          document.getElementById('uploadStatus').innerHTML = 'Upload successful';
+          loadHistory();
+        } else {
+          document.getElementById('uploadStatus').innerHTML = 'Upload failed';
+        }
+      };
+
+      xhr.open('POST', '/upload');
+      xhr.send(formData);
+    });
+
+    function loadHistory() {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          const files = JSON.parse(xhr.responseText);
+          const historyDiv = document.getElementById('history');
+          historyDiv.innerHTML = files.map(file => `<a href="${file.url}" download>${file.filename}</a>`).join('<br>');
+        } else {
+          document.getElementById('history').innerHTML = 'Failed to load history';
+        }
+      };
+      xhr.open('GET', '/history');
+      xhr.send();
+    }
+
+    // Load history on page load
+    window.onload = loadHistory;
+  </script>
+</body>
+</html>
